@@ -1,7 +1,7 @@
 <?php
-// mart_pos_system/pages/products.php
+// mart_pos_system/pages/manage_products.php
 
-// 1. Establish direct connection to the POS engine database
+// Connect to the POS database (Adjust path if db.php is available in root)
 $host = 'localhost';
 $db_user = 'root';
 $db_pass = '';
@@ -12,7 +12,7 @@ if (!$conn_pos) {
 }
 mysqli_set_charset($conn_pos, "utf8mb4");
 
-// Fetch products alongside their assigned category context[cite: 2]
+// Fetch products alongside their category name
 $sql = "SELECT p.*, c.category_name 
         FROM products p 
         LEFT JOIN categories c ON p.category_id = c.id 
@@ -24,7 +24,7 @@ $result = mysqli_query($conn_pos, $sql);
 
 <head>
     <meta charset="UTF-8">
-    <title>Products Master Catalog</title>
+    <title>Inventory Management</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
 
@@ -32,8 +32,8 @@ $result = mysqli_query($conn_pos, $sql);
 
     <div class="container bg-white p-4 rounded shadow-sm">
         <div class="d-flex justify-content-between align-items-center mb-4">
-            <h3 class="fw-bold mb-0 text-dark">📦 Product Master List</h3>
-            <!-- Add Item Action Trigger -->
+            <h3 class="fw-bold mb-0 text-dark">📦 Product Inventory Master List</h3>
+            <!-- Trigger Modal Button -->
             <button class="btn btn-primary fw-semibold" data-bs-toggle="modal" data-bs-target="#addProductModal">
                 ➕ Add New Product
             </button>
@@ -62,7 +62,7 @@ $result = mysqli_query($conn_pos, $sql);
                             <td class="fw-bold text-primary">$<?php echo number_format($row['price'], 2); ?></td>
                             <td>
                                 <span class="badge <?php echo $row['quantity'] > 10 ? 'bg-success' : 'bg-danger'; ?> fs-6">
-                                    <?php echo $row['quantity']; ?> remaining
+                                    <?php echo $row['quantity']; ?> available
                                 </span>
                             </td>
                             <td>
@@ -74,27 +74,27 @@ $result = mysqli_query($conn_pos, $sql);
                     <?php endwhile; ?>
                 <?php else: ?>
                     <tr>
-                        <td colspan="7" class="text-center py-4 text-muted">No products registered in the inventory database records.</td>
+                        <td colspan="7" class="text-center py-4 text-muted">No products registered in the backend catalog.</td>
                     </tr>
                 <?php endif; ?>
             </tbody>
         </table>
     </div>
 
-    <!-- Product Creation Modal -->
+    <!-- Add Product Modal -->
     <div class="modal fade" id="addProductModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content border-0 shadow">
                 <div class="modal-header bg-dark text-white">
                     <h5 class="modal-title fw-bold">Add New Catalog Item</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                    <button type="button" class="btn-close btn-close-white" data-bs-toggle="modal" data-bs-target="#addProductModal"></button>
                 </div>
-                <!-- 🌟 FIXED ROUTE: Moves perfectly back one folder to match the processing script at the root level -->
-                <form action="./add_product.php" method="POST">
+                <!-- Action routes directly to the script file sitting in your root folder -->
+                <form action="../add_product.php" method="POST">
                     <div class="modal-body">
                         <div class="mb-3">
                             <label class="form-label fw-semibold">Product Name</label>
-                            <input type="text" name="product_name" class="form-control" placeholder="e.g., Premium Organic Apple" required>
+                            <input type="text" name="product_name" class="form-control" placeholder="e.g., Whole Grain Bread" required>
                         </div>
                         <div class="row mb-3">
                             <div class="col">
@@ -110,8 +110,8 @@ $result = mysqli_query($conn_pos, $sql);
                             <label class="form-label fw-semibold">Barcode String</label>
                             <input type="text" name="barcode" class="form-control" placeholder="Scan or type numbers">
                         </div>
-                        <input type="hidden" name="category_id" value="1">
-                        <input type="hidden" name="brand_id" value="1">
+                        <input type="hidden" name="category_id" value="1"> <!-- Default template category -->
+                        <input type="hidden" name="brand_id" value="1"> <!-- Default template brand -->
                     </div>
                     <div class="modal-footer bg-light">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>

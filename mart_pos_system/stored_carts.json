@@ -1,0 +1,114 @@
+{
+    "b79e15eefc7fdd33": {
+        "0": {
+            "product_id": "101",
+            "name": "Premium Java Masterclass",
+            "qty": 1,
+            "price": 19.99
+        },
+        "status": "paid"
+    },
+    "admin_metrics": {
+        "total_cash_in": 419.86999999999995,
+        "total_transactions": 5
+    },
+    "db5a2bd8e3787d8d": {
+        "0": {
+            "product_id": "101",
+            "name": "Premium Java Masterclass",
+            "qty": 1,
+            "price": 19.99
+        },
+        "status": "paid"
+    },
+    "c539c2c0191ee428": {
+        "0": {
+            "product_id": "101",
+            "name": "Premium Java Masterclass",
+            "qty": 1,
+            "price": 19.99
+        },
+        "1": {
+            "product_id": "102",
+            "name": "Responsive Bootstrap Framework Guide",
+            "qty": 1,
+            "price": 49.99
+        },
+        "2": {
+            "product_id": "103",
+            "name": "Full-Stack PHP Retail Architecture",
+            "qty": 2,
+            "price": 29.99
+        },
+        "status": "paid"
+    },
+    "f207eecbbb1ac2ca": {
+        "0": {
+            "product_id": "102",
+            "name": "Responsive Bootstrap Framework Guide",
+            "qty": 2,
+            "price": 49.99
+        },
+        "1": {
+            "product_id": "103",
+            "name": "Full-Stack PHP Retail Architecture",
+            "qty": 1,
+            "price": 29.99
+        },
+        "status": "paid"
+    },
+    "9c41b67f06704b6c": {
+        "0": {
+            "product_id": "101",
+            "name": "Premium Java Masterclass",
+            "qty": 2,
+            "price": 19.99
+        },
+        "1": {
+            "product_id": "102",
+            "name": "Responsive Bootstrap Framework Guide",
+            "qty": 1,
+            "price": 49.99
+        },
+        "2": {
+            "product_id": "103",
+            "name": "Full-Stack PHP Retail Architecture",
+            "qty": 1,
+            "price": 29.99
+        },
+        "status": "paid"
+    },
+    "fdaa262866110928": {
+        "0": {
+            "product_id": "101",
+            "name": "Premium Java Masterclass",
+            "qty": 1,
+            "price": 19.99
+        },
+        "status": "pending"
+    },
+    "eb48a4b76213af56": {
+        "0": {
+            "product_id": 1,
+            "name": "Premium Organic Apple",
+            "qty": 1,
+            "price": 1.99
+        },
+        "status": "paid"
+    },
+    "0be5c67892cea57e": {
+        "0": {
+            "product_id": 2,
+            "name": "Whole Grain Bread",
+            "qty": 1,
+            "price": 3.49
+        },
+        "1": {
+            "product_id": 1,
+            "name": "Premium Organic Apple",
+            "qty": 1,
+            "price": 1.99
+        },
+        "status": "paid"
+    }
+}
