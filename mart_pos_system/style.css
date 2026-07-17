@@ -1,0 +1,250 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+/* Let the flex classes do the heavy lifting, keep this simple */
+.sidebar {
+  height: 100vh;
+  position: sticky;
+  top: 0;
+}
+@media print {
+  /* 1. Purge all structural grid panels, layouts, and menus from the view page canvas */
+  body * {
+    visibility: hidden !important;
+  }
+
+  /* 2. Target only the opened invoice card frame block and its complete child nodes tree */
+  .modal.show .printable-invoice-card,
+  .modal.show .printable-invoice-card * {
+    visibility: visible !important;
+  }
+
+  /* 3. Re-anchor the modal directly to the absolute page origin boundaries with clean margins */
+  .modal.show .printable-invoice-card {
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 100% !important;
+    border: none !important;
+    box-shadow: none !important;
+    background: #fff !important;
+  }
+
+  /* 4. Strip out unnecessary backdrop layers and dark modal overlay blocks completely */
+  .modal-backdrop {
+    display: none !important;
+  }
+}
+
+/* UI Highlight Custom Tweaks */
+.navbar-nav .nav-link {
+  transition: all 0.2s ease-in-out;
+}
+
+/* .navbar-nav .nav-link:hover:not(.active-link) {
+  background-color: #f1f5f9 !important;
+  color: #0f172a !important;
+} */
+
+/* .navbar-nav .nav-link:hover:not(.active-link) i,
+.navbar-nav .nav-link:hover:not(.active-link) {
+  color: #0d6efd !important;
+  background-color: #f1f5f9 !important;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+} */
+
+/* Style rules for the active page link tab layout */
+.navbar-nav .active-link {
+  font-weight: 700 !important;
+  color: #0d6efd !important;
+}
+
+.navbar-nav .text-danger:hover {
+  background-color: #fff5f5 !important;
+  color: #dc3545 !important;
+}
+
+.navbar-nav .text-danger:hover i {
+  color: #dc3545 !important;
+}
+
+.overflow-y-auto::-webkit-scrollbar {
+  width: 4px;
+}
+
+.overflow-y-auto::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+
+/*dark-mode */
+/* ==================== GLOBAL DARK MODE OVERRIDES ==================== */
+[data-bs-theme="dark"] .bg-white,
+[data-bs-theme="dark"] .card,
+[data-bs-theme="dark"] .modal-content,
+[data-bs-theme="dark"] nav.sidebar {
+  background-color: #1e293b !important; /* Slate-dark charcoal background */
+}
+
+[data-bs-theme="dark"] .text-dark,
+[data-bs-theme="dark"] h2,
+[data-bs-theme="dark"] h3,
+[data-bs-theme="dark"] h4,
+[data-bs-theme="dark"] h5,
+[data-bs-theme="dark"] label {
+  color: #f8fafc !important; /* Crisp off-white for headers */
+}
+
+[data-bs-theme="dark"] .text-secondary,
+[data-bs-theme="dark"] .text-muted {
+  color: #94a3b8 !important; /* Soft gray description texts */
+}
+
+[data-bs-theme="dark"] .bg-light {
+  background-color: #0f172a !important; /* Deep dark layer inside cards */
+}
+
+/* ==================== NEW: RECONSTRUCT COMPONENT CONTRAST ==================== */
+
+/* 1. Fix Top Navbar Links visibility */
+[data-bs-theme="dark"] .navbar,
+[data-bs-theme="dark"] .nav-link,
+[data-bs-theme="dark"] .navbar-brand {
+  color: #cbd5e1 !important; /* Changes navigation menu links to clear light slate gray */
+}
+[data-bs-theme="dark"] .nav-link:hover,
+[data-bs-theme="dark"] .nav-link:hover i {
+  color: #38bdf8 !important; /* Bright blue highlight when hovering over top links */
+}
+
+/* 2. Fix Input Text Boxes, Textareas, and Dropdown Select fields */
+[data-bs-theme="dark"] .form-control,
+[data-bs-theme="dark"] .form-select,
+[data-bs-theme="dark"] textarea {
+  background-color: #0f172a !important; /* Midnight dark input fields */
+  color: #f1f5f9 !important; /* White typing/input values text */
+  border-color: #334155 !important; /* Subdued subtle border lines */
+}
+
+/* 3. Fix Input placeholders (the grey hint text inside text fields) */
+[data-bs-theme="dark"] .form-control::placeholder {
+  color: #64748b !important;
+}
+
+/* 4. Keep your active sidebar links looking beautiful and high contrast */
+[data-bs-theme="dark"] .active-link {
+  background-color: #0f172a !important; /* Dark inset background for selected menu item */
+  color: #38bdf8 !important; /* Sky blue active text color */
+}
+
+/* Smooth hover lift effect for the navigation matrix cards */
+.navigation-card {
+  transition:
+    transform 0.2s ease-in-out,
+    box-shadow 0.2s ease-in-out,
+    border-color 0.2s ease-in-out;
+}
+.navigation-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+}
+
+/* Make card titles match theme mode smoothly */
+.navigation-card h5 {
+  color: var(--bs-body-color);
+}
+
+/* Add a slight border look in dark mode for better visibility */
+[data-bs-theme="dark"] .navigation-card {
+  border: 1px solid #334155 !important;
+}
+
+/* Base configuration for the navigation cards */
+.navigation-card {
+  transition:
+    transform 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+    box-shadow 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+    border-color 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: transform, box-shadow; /* Optimizes rendering performance */
+}
+
+/* 🚀 THE HOVER ANIMATION STATES */
+.navigation-card:hover {
+  transform: translateY(-5px); /* Smoothly lifts the card up */
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.12) !important; /* Soft, deep drop shadow */
+  border-color: #0d6efd !important; /* Highlights the border with your theme primary blue */
+}
+
+/* Slight icon pop effect on hover */
+.navigation-card i {
+  transition:
+    transform 0.25s ease,
+    color 0.25s ease;
+}
+.navigation-card:hover i {
+  transform: scale(1.1); /* Slightly enlarges the icon */
+  color: #0d6efd !important; /* Forces icon to full primary color strength */
+  opacity: 1 !important;
+}
+
+/* Ensures card typography adapts seamlessly to dark/light theme properties */
+.navigation-card h5 {
+  color: var(--bs-body-color);
+  transition: color 0.2s ease;
+}
+
+/* Dark mode border optimization adjustments */
+[data-bs-theme="dark"] .navigation-card {
+  border: 1px solid #334155 !important;
+}
+[data-bs-theme="dark"] .navigation-card:hover {
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4) !important; /* Darker, heavier shadow for dark background contrast */
+  border-color: #38bdf8 !important; /* Uses sky blue accent for dark mode highlight */
+}
+[data-bs-theme="dark"] .navigation-card:hover i {
+  color: #38bdf8 !important;
+}
+
+/* 📊 HIGH-CONTRAST SEPARATED TABLE HEADERS */
+table thead th {
+  background-color: #e2e8f0 !important; /* 💡 Slightly deeper, crisp gray distinct from the main page body bg */
+  color: #334155 !important; /* High-readability dark slate text */
+  font-weight: 700 !important;
+  border-bottom: 2px solid #cbd5e1 !important;
+  padding-top: 12px !important;
+  padding-bottom: 12px !important;
+}
+
+/* 🌙 High-Contrast Inversion Mapping for Dark Mode */
+/* 📊 RE-ARCHITECTED HIGH-CONTRAST DATA HEADERS */
+[data-bs-theme="dark"] table thead th {
+  background-color: #1e293b !important; /* 💡 Lighter charcoal slate that blends cleanly with dark page panels */
+  color: #f1f5f9 !important; /* Pure crisp off-white for perfect reading visibility */
+  border-bottom: 2px solid #334155 !important; /* Clean distinct separator border line */
+  font-size: 0.8rem !important; /* Makes column headers small and sharp */
+  letter-spacing: 0.5px !important; /* Clean professional spacing for uppercase labels */
+}
+
+/* ==================== PRECISION DARK MODE COMPONENT FIX ==================== */
+
+/* ==================== PRECISION DARK MODE CARD HEADER MATCH ==================== */
+
+/* This targets your card headers ONLY when Dark Mode is active */
+[data-bs-theme="dark"] .card-header {
+  /* background-color: transparent !important; 💡 Matches your exact deep midnight blue canvas perfectly! */
+  /* background-color: #1e293b !important; Slate-dark charcoal background */
+  background-color: #0f172a !important;
+
+  border: none !important;
+  border-bottom: none !important;
+  padding-left: 0 !important; /* Optional: Aligns text perfectly flush with table columns */
+}
+
+/* Keeps the card subtitle headers crisp and clear against your midnight blue canvas */
+[data-bs-theme="dark"] .card-header h6,
+[data-bs-theme="dark"] .card-header .text-dark {
+  color: #f1f5f9 !important;
+}

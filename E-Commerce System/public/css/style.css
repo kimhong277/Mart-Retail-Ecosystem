@@ -1,0 +1,58 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+/* Add this right below your * reset selector */
+html,
+body {
+  height: 100vh !important;
+  width: 100vw !important;
+  overflow: hidden !important; /* Forces the browser window to stop scrolling */
+  margin: 0;
+  padding: 0;
+  background-color: darkblue;
+}
+
+/* Ensure your main scroll area handles the scroll cleanly */
+main {
+  overflow-y: auto !important;
+  height: 100%;
+}
+.logo {
+  width: 100px;
+  height: 50px;
+}
+.menu-btn {
+  background: none;
+  border: none;
+  font-size: 28px;
+  cursor: pointer;
+  color: #1f2937;
+}
+/* Smooth vertical slide transition for Bootstrap 5 collapse */
+.navbar-collapse.collapsing {
+  height: 0;
+  overflow: hidden;
+  transition: height 0.35s ease-in-out;
+}
+
+.navbar-collapse.show {
+  height: auto;
+}
+
+/* Small (sm) */
+@media screen and (max-width: 640px) {
+}
+
+/* Medium (md) */
+@media screen and (min-width: 641px) and (max-width: 768px) {
+}
+
+/* Large (lg) */
+@media screen and (min-width: 769px) and (max-width: 1024px) {
+}
+
+/* Extra Large (xl) */
+@media screen and (min-width: 1025px) {
+}

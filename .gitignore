@@ -1,0 +1,11 @@
+# Ignore vendor folders inside any directory structure level
+**/vendor/
+composer.phar
+
+# Ignore local configuration environment overrides
+.env
+.env.local
+
+# Operating System files
+.DS_Store
+Thumbs.db
