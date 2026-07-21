@@ -113,9 +113,9 @@ $staff_list = mysqli_query($conn, "SELECT * FROM users ORDER BY id ");
                                                     <div class="mb-3">
                                                         <label class="form-label small fw-bold text-secondary">Assigned Authorization Role</label>
                                                         <select name="role" class="form-select font-monospace small">
-                                                            <option value="cashier" <?= $role === 'cashier' ? 'selected' : '' ?>>CASHIER</option>
-                                                            <option value="manager" <?= $role === 'manager' ? 'selected' : '' ?>>MANAGER</option>
-                                                            <option value="admin" <?= $role === 'admin' ? 'selected' : '' ?>>ADMIN</option>
+                                                            <option value="cashier" <?= $role === 'Cashier' ? 'selected' : '' ?>>CASHIER</option>
+                                                            <option value="manager" <?= $role === 'Manager' ? 'selected' : '' ?>>MANAGER</option>
+                                                            <option value="admin" <?= $role === 'Admin' ? 'selected' : '' ?>>ADMIN</option>
                                                         </select>
                                                     </div>
 
