@@ -1,80 +1,87 @@
 <?php
 // process_account.php
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
+$conn = mysqli_connect('localhost', 'root', '', 'mart_pos_system');
+if (!$conn) {
+    die("Database transaction access error: " . mysqli_connect_error());
 }
-require_once 'db.php';
+mysqli_set_charset($conn, "utf8mb4");
 
-// 1. CREATE USER ACCOUNT
-if (isset($_POST['add_user'])) {
-    $username = mysqli_real_escape_string($conn, trim($_POST['username']));
-    $fullname = mysqli_real_escape_string($conn, trim($_POST['fullname']));
-    $role     = mysqli_real_escape_string($conn, $_POST['role']);
-    $created  = date("Y-m-d H:i:s");
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
-    if (!empty($username) && !empty($fullname)) {
-        $check = mysqli_query($conn, "SELECT id FROM users WHERE username = '$username'");
-        if (mysqli_num_rows($check) > 0) {
-            $_SESSION['status_msg'] = 'duplicate';
-            header("Location: index.php?page=accounts");
-            exit();
+    // ACTION A: Update details generated from the dynamic "Manage" modal
+    if (isset($_POST['update_operator'])) {
+        $user_id      = intval($_POST['user_id']);
+        $fullname     = mysqli_real_escape_string($conn, $_POST['fullname']);
+        $email        = mysqli_real_escape_string($conn, $_POST['email']);
+        $role         = mysqli_real_escape_string($conn, $_POST['role']);
+        $status       = intval($_POST['status']);
+        $new_password = $_POST['new_password'];
+
+        // Prevent modification of system master administrative account configuration container
+        if ($user_id === 1) {
+            header("Location: index.php?page=accounts&status=unauthorized");
+            exit;
         }
 
-        $sql = "INSERT INTO users (username, fullname, role, status, created_at) 
-                VALUES ('$username', '$fullname', '$role', 1, '$created')";
-        if (mysqli_query($conn, $sql)) {
-            $_SESSION['status_msg'] = 'inserted';
-            header("Location: index.php?page=accounts");
-            exit();
+        // Evaluate whether the administrator requested a password override
+        if (!empty($new_password)) {
+            // Securely hash the new credential signature string
+            $hashed_password = password_hash($new_password, PASSWORD_BCRYPT);
+            $update_sql = "UPDATE users SET fullname = '$fullname', email = '$email', password = '$hashed_password', role = '$role', status = $status WHERE id = $user_id";
+        } else {
+            // Keep the user's legacy database password parameter completely intact
+            $update_sql = "UPDATE users SET fullname = '$fullname', email = '$email', role = '$role', status = $status WHERE id = $user_id";
         }
+
+        if (mysqli_query($conn, $update_sql)) {
+            header("Location: index.php?page=accounts&status=updated");
+        } else {
+            header("Location: index.php?page=accounts&status=error");
+        }
+        exit;
     }
-    $_SESSION['status_msg'] = 'error';
+
+    // ACTION B: Provision a completely new worker registration node entry
+    if (isset($_POST['provision_user'])) {
+        $username = mysqli_real_escape_string($conn, $_POST['username']);
+        $fullname = mysqli_real_escape_string($conn, $_POST['fullname']);
+        $email    = mysqli_real_escape_string($conn, $_POST['email']);
+        $role     = mysqli_real_escape_string($conn, $_POST['role']);
+        $password = $_POST['password'];
+
+        // Securely hash the initial login token verification payload
+        $hashed_password = password_hash($password, PASSWORD_BCRYPT);
+
+        $insert_sql = "INSERT INTO users (username, fullname, email, password, role, status, created_at) 
+                       VALUES ('$username', '$fullname', '$email', '$hashed_password', '$role', 1, NOW())";
+
+        if (mysqli_query($conn, $insert_sql)) {
+            header("Location: index.php?page=accounts&status=inserted");
+        } else {
+            header("Location: index.php?page=accounts&status=error");
+        }
+        exit;
+    }
+    // ACTION C: Secure purge handling for user metadata node tracking lines
+    if (isset($_POST['delete_operator'])) {
+        $user_id = intval($_POST['user_id']);
+
+        // Extra protection level check: Block deletion of master administrative system user #1
+        if ($user_id === 1) {
+            header("Location: index.php?page=accounts&status=unauthorized");
+            exit;
+        }
+
+        $delete_sql = "DELETE FROM users WHERE id = $user_id";
+
+        if (mysqli_query($conn, $delete_sql)) {
+            header("Location: index.php?page=accounts&status=deleted");
+        } else {
+            header("Location: index.php?page=accounts&status=error");
+        }
+        exit;
+    }
+} else {
     header("Location: index.php?page=accounts");
-    exit();
-}
-
-// 2. UPDATE USER DETAILS
-if (isset($_POST['update_user'])) {
-    $id       = intval($_POST['user_id']);
-    $fullname = mysqli_real_escape_string($conn, trim($_POST['fullname']));
-    $role     = mysqli_real_escape_string($conn, $_POST['role']);
-    $status   = intval($_POST['status']);
-
-    // Safeguard: Block suspending or changing the role of the primary master administrator
-    if ($id === 1 && ($status === 0 || $role !== 'Admin')) {
-        $_SESSION['status_msg'] = 'protected_admin';
-        header("Location: index.php?page=accounts");
-        exit();
-    }
-
-    $sql = "UPDATE users SET fullname = '$fullname', role = '$role', status = $status WHERE id = $id";
-    if (mysqli_query($conn, $sql)) {
-        $_SESSION['status_msg'] = 'updated';
-        header("Location: index.php?page=accounts");
-        exit();
-    }
-    $_SESSION['status_msg'] = 'error';
-    header("Location: index.php?page=accounts");
-    exit();
-}
-
-// 3. HARD DELETE SAFEGUARD
-if (isset($_GET['action']) && $_GET['action'] == 'delete') {
-    $id = intval($_GET['id']);
-
-    if ($id === 1) {
-        $_SESSION['status_msg'] = 'protected_admin';
-        header("Location: index.php?page=accounts");
-        exit();
-    }
-
-    $sql = "DELETE FROM users WHERE id = $id";
-    if (mysqli_query($conn, $sql)) {
-        $_SESSION['status_msg'] = 'deleted';
-        header("Location: index.php?page=accounts");
-        exit();
-    }
-    $_SESSION['status_msg'] = 'error';
-    header("Location: index.php?page=accounts");
-    exit();
+    exit;
 }

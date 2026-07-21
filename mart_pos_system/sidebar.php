@@ -3,25 +3,25 @@
 $active_page = $_GET['page'] ?? 'dashboard'; // Defaults to dashboard if no page parameter is set
 
 // 2. Separate check for your collapsible setting menu wrapper layout panel
-$is_settings_active = ($active_page === 'settings');
-$current_tab = $_GET['tab'] ?? '';
+// $is_settings_active = ($active_page === 'settings');
+// $current_tab = $_GET['tab'] ?? '';
 ?>
 
 <nav class="sidebar shadow position-fixed top-0 start-0 vh-100 bg-white d-flex flex-column pt-4 px-3" aria-label="Sidebar Dashboard Navigation" style="width: 280px; z-index: 1030;">
     <div class="mb-4 px-2">
         <h5 class="shadow-sm p-3 bg-dark text-white rounded rounded-3 text-center fw-bold tracking-wide m-0">
-            <i class="bi bi-speedometer2 me-2 text-primary"></i>MINI POS
+            <i class="bi bi-shop me-2 text-primary"></i>DAILY MART
         </h5>
     </div>
 
     <div class="flex-grow-1 overflow-y-auto px-1" style="max-height: calc(100vh - 160px);">
         <ul class="navbar-nav p-0 m-0 gap-1">
 
-            <li class="nav-item">
+            <!-- <li class="nav-item">
                 <a href="index.php?page=navigation" class="nav-link text-dark fw-semibold d-flex align-items-center px-2 rounded <?= $active_page === 'navigation' ? 'bg-light text-primary active-link' : '' ?>">
                     <i class="bi bi-compass-fill me-2 <?= $active_page === 'navigation' ? 'text-primary' : 'text-secondary' ?> me-2.5 fs-5"></i> Navigation
                 </a>
-            </li>
+            </li> -->
 
             <li class="nav-item">
                 <a href="index.php?page=dashboard" class="nav-link text-dark fw-semibold d-flex align-items-center px-2 rounded <?= $active_page === 'dashboard' ? 'bg-light text-primary active-link' : '' ?>">
@@ -91,36 +91,13 @@ $current_tab = $_GET['tab'] ?? '';
                 </li>
 
                 <li class="nav-item">
-                    <!-- 💡 FIXED: href pushes the page to the user tab, while onclick forces the dropdown toggle simultaneously -->
-                    <a class="nav-link dropdown-toggle text-dark fw-semibold d-flex align-items-center justify-content-between px-2 rounded <?= $is_settings_active ? 'bg-light text-primary active-link' : '' ?>"
-                        href="index.php?page=settings&tab=user"
-                        role="button"
-                        onclick="event.preventDefault(); new bootstrap.Collapse(document.getElementById('settingSubmenu')).toggle(); setTimeout(() => { window.location.href = this.href; }, 150);">
+                    <!-- 🚀 CLEANED: Dropdown logic stripped. Becomes a direct structural link to global configurations -->
+                    <a class="nav-link text-dark fw-semibold d-flex align-items-center justify-content-between px-2 rounded <?= $active_page === 'settings' ? 'bg-light text-primary active-link' : '' ?>"
+                        href="index.php?page=settings">
                         <div class="d-flex align-items-center">
-                            <i class="bi bi-gear-fill me-2 <?= $is_settings_active ? 'text-primary' : 'text-secondary' ?> me-2.5 fs-5"></i> Setting
+                            <i class="bi bi-gear-fill me-2 <?= $active_page === 'settings' ? 'text-primary' : 'text-secondary' ?> me-2.5 fs-5"></i> Settings
                         </div>
                     </a>
-
-                    <!-- 💡 Keeps its state open on load via PHP, but remains completely dynamic on click -->
-                    <div class="collapse <?= $is_settings_active ? 'show' : '' ?>" id="settingSubmenu">
-                        <ul class="nav flex-column ps-4 mt-1 gap-1 border-start ms-3 text-muted">
-                            <li class="nav-item">
-                                <a class="nav-link py-1 fw-medium d-flex align-items-center rounded <?= ($is_settings_active && $current_tab === 'user') ? 'text-primary fw-bold' : 'text-secondary' ?>" href="index.php?page=settings&tab=user">
-                                    <i class="bi bi-people me-2"></i> Users Config
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link py-1 fw-medium d-flex align-items-center rounded <?= ($is_settings_active && $current_tab === 'profile') ? 'text-primary fw-bold' : 'text-secondary' ?>" href="index.php?page=settings&tab=profile">
-                                    <i class="bi bi-building-gear me-2"></i> Profile Meta
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link py-1 fw-medium d-flex align-items-center rounded <?= ($is_settings_active && $current_tab === 'appearance') ? 'text-primary fw-bold' : 'text-secondary' ?>" href="index.php?page=settings&tab=appearance">
-                                    <i class="bi bi-palette me-2"></i> Appearance
-                                </a>
-                            </li>
-                        </ul>
-                    </div>
                 </li>
             <?php endif; ?>
 

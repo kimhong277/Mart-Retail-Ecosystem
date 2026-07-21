@@ -1,26 +1,36 @@
 <?php
 // pages/quotations.php
-require_once 'db.php';
+$host = 'localhost';
+$db_user = 'root';
+$db_pass = '';
+$conn = mysqli_connect($host, $db_user, $db_pass, 'mart_pos_system');
+
+if (!$conn) {
+    die("Database engine link down: " . mysqli_connect_error());
+}
+mysqli_set_charset($conn, "utf8mb4");
 
 // READ 1: Fetch warehouse product details for the lookup select box
-$products_list = mysqli_query($conn, "SELECT id, product_name, price FROM products ORDER BY product_name ASC");
+$products_list = mysqli_query($conn, "SELECT id, product_name, sale_price FROM products ORDER BY product_name ASC");
 
-// READ 2: Fetch all saved quotes from your new database table to view in the log below
+// READ 2: Fetch all saved quotes from your database table to view in the log below
 $saved_quotes = mysqli_query($conn, "SELECT * FROM quotations ORDER BY id DESC");
 ?>
 
 <div class="container-fluid px-4 pt-4">
     <div class="mb-4">
-        <h2 class="h3 mb-0 text-gray-800 fw-bold">Commercial Quotations & Estimates</h2>
+        <span class="text-primary fw-bold text-uppercase small d-block mb-1" style="letter-spacing: 0.05em;">Commercial Pipelines</span>
+        <h2 class="h3 mb-0 text-dark fw-bold">Commercial Quotations & Estimates</h2>
         <p class="text-muted small">Generate professional pricing estimates for bulk buyers without altering live storage stock numbers.</p>
     </div>
 
     <form action="process_quotation.php" method="POST" class="mb-5">
         <div class="row g-4">
 
+            <!-- Left Hand Panel: Estimate Builder Core Layout -->
             <div class="col-12 col-lg-8">
-                <div class="card shadow-sm border-0 p-4">
-                    <h5 class="fw-bold text-dark mb-3"><i class="bi bi-calculator me-2"></i>Estimate Builder</h5>
+                <div class="card shadow-sm border-0 p-4 bg-white rounded-4">
+                    <h5 class="fw-bold text-dark mb-3"><i class="bi bi-calculator me-2 text-primary"></i>Estimate Builder</h5>
 
                     <div class="row g-3 align-items-end mb-4">
                         <div class="col-md-8">
@@ -28,8 +38,8 @@ $saved_quotes = mysqli_query($conn, "SELECT * FROM quotations ORDER BY id DESC")
                             <select id="qtProductSelector" class="form-select">
                                 <option value="" disabled selected hidden>-- Choose Product Item --</option>
                                 <?php while ($prod = mysqli_fetch_assoc($products_list)): ?>
-                                    <option value="<?= $prod['id'] ?>" data-name="<?= htmlspecialchars($prod['product_name']) ?>" data-price="<?= $prod['price'] ?>">
-                                        <?= htmlspecialchars($prod['product_name']) ?> - $<?= number_format($prod['price'], 2) ?>
+                                    <option value="<?= $prod['id'] ?>" data-name="<?= htmlspecialchars($prod['product_name']) ?>" data-price="<?= $prod['sale_price'] ?>">
+                                        <?= htmlspecialchars($prod['product_name']) ?> - $<?= number_format($prod['sale_price'], 2) ?>
                                     </option>
                                 <?php endwhile; ?>
                             </select>
@@ -42,11 +52,11 @@ $saved_quotes = mysqli_query($conn, "SELECT * FROM quotations ORDER BY id DESC")
                     </div>
 
                     <div class="table-responsive">
-                        <table class="table table-hover align-middle">
-                            <thead class="table-light text-muted small text-uppercase">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light text-muted small text-uppercase fw-semibold">
                                 <tr>
                                     <th>Product Item Designation</th>
-                                    <th style="width: 20%;">Qty Required</th>
+                                    <th style="width: 25%;">Qty Required</th>
                                     <th>Unit Price</th>
                                     <th>Subtotal</th>
                                     <th class="text-center" style="width: 10%;">Remove</th>
@@ -65,28 +75,29 @@ $saved_quotes = mysqli_query($conn, "SELECT * FROM quotations ORDER BY id DESC")
                 </div>
             </div>
 
+            <!-- Right Hand Panel: Estimate Properties Summary Frame -->
             <div class="col-12 col-lg-4">
-                <div class="card shadow-sm border-0 p-4 bg-white position-sticky" style="top: 20px;">
-                    <h5 class="fw-bold text-dark mb-3"><i class="bi bi-person-lines-fill me-2"></i>Estimate Properties</h5>
+                <div class="card shadow-sm border-0 p-4 bg-white rounded-4 position-sticky" style="top: 20px; border-top: 4px solid #0d6efd !important;">
+                    <h5 class="fw-bold text-dark mb-3"><i class="bi bi-person-lines-fill me-2 text-primary"></i>Estimate Properties</h5>
 
                     <div class="mb-3">
                         <label class="form-label small fw-bold text-secondary">Client / Business Name</label>
-                        <input type="text" name="customer_name" class="form-control" placeholder="e.g., Acacia Group Intl">
+                        <input type="text" name="customer_name" class="form-control" placeholder="e.g., Acacia Group Intl" required>
                     </div>
 
                     <div class="d-flex justify-content-between align-items-center mb-3 border-bottom pb-2">
                         <span class="text-muted small fw-medium">Estimated Subtotal:</span>
-                        <span class="fw-bold text-dark" id="displayQtSubtotal">$0.00</span>
+                        <span class="fw-bold text-dark font-monospace" id="displayQtSubtotal">$0.00</span>
                     </div>
 
                     <div class="d-flex justify-content-between align-items-center mb-4">
                         <span class="h6 fw-bold mb-0 text-dark">Estimated Total:</span>
-                        <span class="h4 fw-bold mb-0 text-dark" id="displayQtGrandTotal">$0.00</span>
+                        <span class="h4 fw-bold mb-0 text-primary font-monospace" id="displayQtGrandTotal">$0.00</span>
                     </div>
 
                     <input type="hidden" name="total_amount" id="formQtTotalAmount" value="0.00">
 
-                    <button type="submit" name="save_quotation" class="btn btn-dark border-white text-white w-100 fw-bold py-3 text-uppercase">
+                    <button type="submit" name="save_quotation" class="btn btn-primary w-100 fw-bold py-3 text-uppercase shadow-sm rounded-3">
                         <i class="bi bi-cloud-arrow-up-fill me-1"></i> Save Proforma Quotation
                     </button>
                 </div>
@@ -95,102 +106,56 @@ $saved_quotes = mysqli_query($conn, "SELECT * FROM quotations ORDER BY id DESC")
         </div>
     </form>
 
-    <div class="card shadow-sm border-0 mb-4">
-        <div class="card-header bg-white py-3 border-0">
-            <h5 class="m-0 fw-bold text-dark"><i class="bi bi-folder-check me-2"></i>Saved Quotation Logs</h5>
+    <!-- Historical Saved Log Table View Framework -->
+    <div class="card shadow-sm border-0 rounded-4 overflow-hidden mb-4 bg-white">
+        <div class="card-header bg-white py-3 border-0 px-4">
+            <h5 class="m-0 fw-bold text-dark"><i class="bi bi-folder-check me-2 text-primary"></i>Saved Quotation Logs</h5>
         </div>
         <div class="card-body p-0">
             <div class="table-responsive">
                 <table class="table table-hover align-middle mb-0">
-                    <thead class="table-light text-muted small text-uppercase">
+                    <thead class="table-light text-muted small text-uppercase fw-semibold">
                         <tr>
                             <th class="ps-4">Quotation No</th>
                             <th>Customer / Client</th>
                             <th>Estimated Total</th>
-                            <th>Valid Until</th>
+                            <th>Pipeline Status</th>
                             <th>Date Created</th>
-                            <th class="text-center" style="width: 15%;">Actions</th>
+                            <th class="text-center" style="width: 20%;">Actions</th>
                         </tr>
                     </thead>
                     <tbody class="small">
                         <?php if ($saved_quotes && mysqli_num_rows($saved_quotes) > 0): ?>
                             <?php while ($quote = mysqli_fetch_assoc($saved_quotes)): ?>
                                 <tr>
-                                    <td class="ps-4 fw-bold text-primary"><?= htmlspecialchars($quote['quotation_no']) ?></td>
+                                    <td class="ps-4 fw-bold text-primary font-monospace"><?= htmlspecialchars($quote['quote_no']) ?></td>
                                     <td class="fw-bold text-dark"><?= htmlspecialchars($quote['customer_name']) ?></td>
-                                    <td class="fw-bold text-success">$<?= number_format($quote['total_amount'], 2) ?></td>
-                                    <td class="text-secondary"><i class="bi bi-calendar-event me-1"></i><?= $quote['valid_until'] ?></td>
-                                    <td class="text-muted"><?= $quote['created_date'] ?></td>
+                                    <td class="fw-bold text-success font-monospace">$<?= number_format($quote['total_amount'], 2) ?></td>
+                                    <td>
+                                        <?php
+                                        $badge_class = 'bg-secondary-subtle text-secondary border-secondary-subtle';
+                                        if ($quote['status'] === 'Approved') $badge_class = 'bg-success-subtle text-success border-success-subtle';
+                                        if ($quote['status'] === 'Sent') $badge_class = 'bg-primary-subtle text-primary border-primary-subtle';
+                                        if ($quote['status'] === 'Expired') $badge_class = 'bg-danger-subtle text-danger border-danger-subtle';
+                                        ?>
+                                        <span class="badge <?= $badge_class ?> border px-2 py-1 rounded">
+                                            <?= $quote['status'] ?>
+                                        </span>
+                                    </td>
+                                    <td class="text-muted small"><?= date('M d, Y h:i A', strtotime($quote['created_at'])) ?></td>
                                     <td class="text-center">
-                                        <button type="button" class="btn btn-sm btn-dark fw-semibold px-3" data-bs-toggle="modal" data-bs-target="#viewInvoiceModal<?= $quote['id'] ?>">
-                                            <i class="bi bi-eye-fill me-1"></i> View
-                                        </button>
+                                        <!-- 🖨️ Direct Link Routing back into your print_invoice.php Engine framework -->
+                                        <a href="print_invoice.php?id=<?= $quote['id'] ?>" target="_blank" class="btn btn-sm btn-outline-dark fw-bold px-3 rounded-2 shadow-sm">
+                                            <i class="bi bi-printer-fill me-1"></i> Print Invoice
+                                        </a>
                                     </td>
                                 </tr>
-
-                                <div class="modal fade" id="viewInvoiceModal<?= $quote['id'] ?>" tabindex="-1" aria-hidden="true">
-                                    <div class="modal-dialog modal-dialog-centered modal-md">
-                                        <div class="modal-content border-0 shadow-lg printable-invoice-card" id="printableModalArea<?= $quote['id'] ?>">
-                                            <div class="modal-body p-4">
-
-                                                <div class="text-center border-bottom pb-3 mb-4">
-                                                    <h4 class="fw-bold text-dark mb-1">MINI POS STORE</h4>
-                                                    <p class="text-muted small mb-0">Phnom Penh, Cambodia | Tel: 012345678</p>
-                                                    <span class="badge bg-secondary-subtle text-dark uppercase small mt-2 px-3 py-1 rounded-pill">Proforma Quotation Slip</span>
-                                                </div>
-
-                                                <div class="row g-2 mb-4 small text-secondary">
-                                                    <div class="col-6">
-                                                        <strong>Quotation Ref:</strong> <span class="text-dark fw-bold"><?= htmlspecialchars($quote['quotation_no']) ?></span>
-                                                    </div>
-                                                    <div class="col-6 text-end">
-                                                        <strong>Date Issued:</strong> <span class="text-dark"><?= date('m/d/Y', strtotime($quote['created_date'])) ?></span>
-                                                    </div>
-                                                    <div class="col-12">
-                                                        <strong>Prepared For:</strong> <span class="text-dark fw-bold"><?= htmlspecialchars($quote['customer_name']) ?></span>
-                                                    </div>
-                                                    <div class="col-12">
-                                                        <strong>Validity Terms:</strong> <span class="text-danger fw-semibold">Valid until <?= date('m/d/Y', strtotime($quote['valid_until'])) ?></span>
-                                                    </div>
-                                                </div>
-
-                                                <div class="border-top border-bottom py-2 my-3">
-                                                    <div class="row fw-bold text-muted small text-uppercase mb-2">
-                                                        <div class="col-7">Description</div>
-                                                        <div class="col-5 text-end">Estimated Amount</div>
-                                                    </div>
-
-                                                    <div class="row small text-dark py-1">
-                                                        <div class="col-7">Bulk Merchandise Order Summary</div>
-                                                        <div class="col-5 text-end fw-semibold">$<?= number_format($quote['total_amount'], 2) ?></div>
-                                                    </div>
-                                                </div>
-
-                                                <div class="d-flex justify-content-between align-items-center bg-light p-3 rounded mb-4">
-                                                    <span class="fw-bold text-secondary small">Estimated Net Balance:</span>
-                                                    <span class="h4 fw-bold text-success mb-0">$<?= number_format($quote['total_amount'], 2) ?></span>
-                                                </div>
-
-                                                <div class="d-flex gap-2 justify-content-end d-print-none">
-                                                    <button type="button" class="btn btn-secondary btn-sm px-3" data-bs-dismiss="modal">Close</button>
-                                                    <button type="button" class="btn btn-dark btn-sm px-3" onclick="window.print()">
-                                                        <i class="bi bi-printer-fill me-1"></i> Print Slip
-                                                    </button>
-                                                </div>
-
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-
-
-
                             <?php endwhile; ?>
                         <?php else: ?>
                             <tr>
                                 <td colspan="6" class="text-center text-muted py-5">
                                     <i class="bi bi-archive display-4 d-block text-black-50 mb-2"></i>
-                                    No saved quotations history records found in your database table logs yet.
+                                    No saved quotations history records found in database logs yet.
                                 </td>
                             </tr>
                         <?php endif; ?>
@@ -227,21 +192,21 @@ $saved_quotes = mysqli_query($conn, "SELECT * FROM quotations ORDER BY id DESC")
         const tr = document.createElement('tr');
         tr.id = 'qt_row_' + id;
         tr.innerHTML = `
-        <td class="fw-bold text-dark">
-            <input type="hidden" name="product_ids[]" value="${id}">
-            ${name}
-        </td>
-        <td>
-            <input type="number" name="quantities[]" class="form-control form-control-sm" value="1" min="1" onchange="calcQuoteRowTotal(this, ${price})">
-        </td>
-        <td class="text-secondary fw-semibold">$${price.toFixed(2)}</td>
-        <td class="fw-bold text-dark qt-subtotal">$${price.toFixed(2)}</td>
-        <td class="text-center">
-            <button type="button" class="btn btn-sm btn-outline-danger border-0 p-1" onclick="removeQuoteRowItem(${id})">
-                <i class="bi bi-trash3-fill"></i>
-            </button>
-        </td>
-    `;
+            <td class="fw-bold text-dark">
+                <input type="hidden" name="product_ids[]" value="${id}">
+                ${name}
+            </td>
+            <td>
+                <input type="number" name="quantities[]" class="form-control form-control-sm text-center font-monospace" value="1" min="1" onchange="calcQuoteRowTotal(this, ${price})" style="max-width:90px;">
+            </td>
+            <td class="text-secondary fw-semibold font-monospace">$${price.toFixed(2)}</td>
+            <td class="fw-bold text-dark qt-subtotal font-monospace">$${price.toFixed(2)}</td>
+            <td class="text-center">
+                <button type="button" class="btn btn-sm btn-outline-danger border-0 p-1" onclick="removeQuoteRowItem(${id})">
+                    <i class="bi bi-trash3-fill"></i>
+                </button>
+            </td>
+        `;
         document.getElementById('quoteBody').appendChild(tr);
         recalculateQuoteSummary();
     }
@@ -289,7 +254,7 @@ $saved_quotes = mysqli_query($conn, "SELECT * FROM quotations ORDER BY id DESC")
         if (statusMsg === 'success') {
             Swal.fire({
                 title: 'Quotation Generated!',
-                text: 'Estimation summary profile ' + qtInvoice + ' saved for accounting reviews.',
+                text: 'Estimation summary profile ' + (qtInvoice || '') + ' saved for accounting reviews.',
                 icon: 'success',
                 confirmButtonColor: '#2D3748'
             });

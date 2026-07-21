@@ -1,116 +1,88 @@
 <?php
-// pages/categories.php
-require_once 'db.php';
+// mart_pos_system/pages/categories.php
+$host = 'localhost';
+$db_user = 'root';
+$db_pass = '';
+$conn_pos = mysqli_connect($host, $db_user, $db_pass, 'mart_pos_system');
 
-// READ: Fetch all categories
-$result = mysqli_query($conn, "SELECT * FROM categories ORDER BY id ");
+if (!$conn_pos) {
+    echo "<div class='alert alert-danger'>Database access failure: " . mysqli_connect_error() . "</div>";
+    return;
+}
+mysqli_set_charset($conn_pos, "utf8mb4");
+
+$sql = "SELECT * FROM categories ORDER BY id ";
+$result = mysqli_query($conn_pos, $sql);
 ?>
 
-<div class="container-fluid px-4 pt-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-            <h2 class="h3 mb-0 text-gray-800 fw-bold">Categories Catalog</h2>
-            <p class="text-muted small mb-0">Organize your shop stock by grouping items into distinct classifications.</p>
+<!-- Include SweetAlert2 library directly inside the view framework -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<div class="card border-0 shadow-sm rounded-3">
+    <div class="card-body p-4">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h4 class="fw-bold mb-0 text-dark">🗂️ Category Inventory Hub</h4>
+            <button class="btn btn-primary fw-semibold d-flex align-items-center gap-2" data-bs-toggle="modal" data-bs-target="#addCategoryModal">
+                <span>➕</span> Add Category
+            </button>
         </div>
-        <button type="button" class="btn btn-dark btn-sm fw-semibold px-4 py-2" data-bs-toggle="modal" data-bs-target="#addCategoryModal">
-            + Add Category
-        </button>
-    </div>
 
-    <div class="card shadow-sm border-0">
-        <div class="card-body p-0">
-            <div class="table-responsive">
-                <table class="table table-hover align-middle mb-0">
-                    <thead class="table-light text-muted small text-uppercase">
-                        <tr>
-                            <th class="ps-4" style="width: 10%;">ID</th>
-                            <th>Category Name</th>
-                            <th>Status</th>
-                            <th style="width: 20%;" class="text-center">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody class="small">
-                        <?php if ($result && mysqli_num_rows($result) > 0): ?>
-                            <?php while ($row = mysqli_fetch_assoc($result)): ?>
-                                <tr>
-                                    <td class="ps-4"><?= $row['id'] ?></td>
-                                    <td class="fw-bold text-dark"><?= htmlspecialchars($row['category_name']) ?></td>
-                                    <td>
-                                        <?php if ($row['status'] == 1): ?>
-                                            <span class="badge bg-success-subtle text-success px-3 py-1 rounded-pill">Active</span>
-                                        <?php else: ?>
-                                            <span class="badge bg-danger-subtle text-danger px-3 py-1 rounded-pill">Inactive</span>
-                                        <?php endif; ?>
-                                    </td>
-                                    <td class="text-center">
-                                        <button class="btn btn-sm btn-outline-dark me-1" data-bs-toggle="modal" data-bs-target="#editCategoryModal<?= $row['id'] ?>">
-                                            <i class="bi bi-pencil-square"></i> Edit
-                                        </button>
-
-                                    </td>
-                                </tr>
-
-                                <div class="modal fade" id="editCategoryModal<?= $row['id'] ?>" tabindex="-1" aria-hidden="true">
-                                    <div class="modal-dialog modal-dialog-centered">
-                                        <div class="modal-content border-0 shadow-lg">
-                                            <div class="modal-header bg-dark text-white">
-                                                <h5 class="modal-title fw-bold">Modify Category #<?= $row['id'] ?></h5>
-                                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                                            </div>
-                                            <form action="process_category.php" method="POST">
-                                                <div class="modal-body p-4">
-                                                    <input type="hidden" name="category_id" value="<?= $row['id'] ?>">
-                                                    <div class="mb-3">
-                                                        <label class="form-label small fw-bold text-secondary">Category Name</label>
-                                                        <input type="text" name="category_name" class="form-control" value="<?= htmlspecialchars($row['category_name']) ?>" required>
-                                                    </div>
-                                                    <div class="mb-3">
-                                                        <label class="form-label small fw-bold text-secondary">Visibility Status</label>
-                                                        <select name="status" class="form-select">
-                                                            <option value="1" <?= $row['status'] == 1 ? 'selected' : '' ?>>Active</option>
-                                                            <option value="0" <?= $row['status'] == 0 ? 'selected' : '' ?>>Inactive</option>
-                                                        </select>
-                                                    </div>
-                                                </div>
-                                                <div class="modal-footer bg-light">
-                                                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
-                                                    <button type="submit" name="update_category" class="btn btn-dark btn-sm px-4">Save Changes</button>
-                                                </div>
-                                            </form>
-                                        </div>
-                                    </div>
-                                </div>
-
-                            <?php endwhile; ?>
-                        <?php else: ?>
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-dark">
+                    <tr>
+                        <th style="width: 100px;">ID</th>
+                        <th>Category Name</th>
+                        <th>Operational Status (Click to Toggle)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php if (mysqli_num_rows($result) > 0): ?>
+                        <?php while ($row = mysqli_fetch_assoc($result)): ?>
                             <tr>
-                                <td colspan="4" class="text-center text-muted py-5">No categories configured yet.</td>
+                                <td><strong>#<?php echo $row['id']; ?></strong></td>
+                                <td class="fw-semibold text-secondary"><?php echo htmlspecialchars($row['category_name']); ?></td>
+                                <td>
+                                    <!-- Add cursor pointer style and an onclick event handler passing item row details -->
+                                    <span class="badge <?php echo $row['status'] == 1 ? 'bg-success' : 'bg-secondary'; ?> fs-7 px-3 py-2"
+                                        style="cursor: pointer;"
+                                        id="status-badge-<?php echo $row['id']; ?>"
+                                        onclick="toggleStatus(<?php echo $row['id'];
+                                                                ?>, <?php echo $row['status']; ?>, '<?php echo addslashes($row['category_name']); ?>')">
+                                        <?php echo $row['status'] == 1 ? 'Active' : 'Disabled'; ?>
+                                    </span>
+                                </td>
                             </tr>
-                        <?php endif; ?>
-                    </tbody>
-                </table>
-            </div>
+                        <?php endwhile; ?>
+                    <?php else: ?>
+                        <tr>
+                            <td colspan="3" class="text-center py-5 text-muted">No classification records saved yet.</td>
+                        </tr>
+                    <?php endif; ?>
+                </tbody>
+            </table>
         </div>
     </div>
 </div>
 
+<!-- Category Generation Modal -->
 <div class="modal fade" id="addCategoryModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content border-0 shadow-lg">
             <div class="modal-header bg-dark text-white">
                 <h5 class="modal-title fw-bold">Add New Category</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <form action="process_category.php" method="POST">
+            <form action="add_category.php" method="POST">
                 <div class="modal-body p-4">
                     <div class="mb-3">
-                        <label class="form-label small fw-bold text-secondary">Category Name <span class="text-danger">*</span></label>
-                        <input type="text" name="category_name" class="form-control" placeholder="e.g., Beverages, Snacks, Cosmetics" required>
+                        <label class="form-label fw-semibold text-secondary">Category Label/Name</label>
+                        <input type="text" name="category_name" class="form-control" placeholder="e.g., Groceries" required>
                     </div>
                 </div>
-                <div class="modal-footer bg-light">
-                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" name="add_category" class="btn btn-dark btn-sm px-4">Save Category</button>
+                <div class="modal-footer bg-light p-3">
+                    <button type="button" class="btn btn-secondary fw-semibold" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" name="submit_category" class="btn btn-primary fw-bold px-4">Create Group</button>
                 </div>
             </form>
         </div>
@@ -118,55 +90,83 @@ $result = mysqli_query($conn, "SELECT * FROM categories ORDER BY id ");
 </div>
 
 <script>
-    function confirmDelete(id) {
+    function toggleStatus(id, currentStatus, name) {
+        const actionText = currentStatus == 1 ? 'Disable' : 'Activate';
+
         Swal.fire({
-            title: 'Are you sure?',
-            text: "This will attempt to remove this classification row from your SQL matrix data maps!",
+            title: 'Change Status?',
+            text: `Are you sure you want to ${actionText.toLowerCase()} the category "${name}"?`,
             icon: 'warning',
             showCancelButton: true,
-            confirmButtonColor: '#2D3748',
+            confirmButtonColor: '#3085d6',
             cancelButtonColor: '#d33',
-            confirmButtonText: 'Yes, delete it!'
+            confirmButtonText: `Yes, ${actionText} it!`
         }).then((result) => {
             if (result.isConfirmed) {
-                window.location.href = 'process_category.php?action=delete&id=' + id;
+                // Send request to the root-level processor file asynchronously
+                const formData = new FormData();
+                formData.append('id', id);
+                formData.append('current_status', currentStatus);
+
+                fetch('toggle_category_status.php', {
+                        method: 'POST',
+                        body: formData
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            Swal.fire({
+                                title: 'Updated!',
+                                text: 'The status has been updated successfully.',
+                                icon: 'success',
+                                timer: 1500,
+                                showConfirmButton: false
+                            });
+
+                            // Dynamically update the badge UI in place without reloading the entire window
+                            const badge = document.getElementById(`status-badge-${id}`);
+                            if (data.new_status == 1) {
+                                badge.className = "badge bg-success fs-7 px-3 py-2";
+                                badge.innerText = "Active";
+                                badge.setAttribute('onclick', `toggleStatus(${id}, 1, '${name}')`);
+                            } else {
+                                badge.className = "badge bg-secondary fs-7 px-3 py-2";
+                                badge.innerText = "Disabled";
+                                badge.setAttribute('onclick', `toggleStatus(${id}, 0, '${name}')`);
+                            }
+                        } else {
+                            Swal.fire('Error!', data.message || 'Failed to update status.', 'error');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        Swal.fire('Error!', 'A system error occurred.', 'error');
+                    });
             }
-        })
-    }
-
-    const urlParams = new URLSearchParams(window.location.search);
-    const statusMsg = urlParams.get('status');
-
-    if (statusMsg) {
-        let titleText = '';
-        let textBody = '';
-        let iconType = 'success';
-
-        if (statusMsg === 'inserted') {
-            titleText = 'Category Created!';
-        } else if (statusMsg === 'updated') {
-            titleText = 'Changes Applied Successfully!';
-        } else if (statusMsg === 'deleted') {
-            titleText = 'Record Erased!';
-            iconType = 'info';
-        } else if (statusMsg === 'constraint_error') {
-            titleText = 'Action Refused!';
-            textBody = 'This category is currently linked to one or more active inventory products. Clear or reassign those items first!';
-            iconType = 'error';
-        } else if (statusMsg === 'error') {
-            titleText = 'System Error!';
-            iconType = 'error';
-        }
-
-        if (titleText !== '') {
-            Swal.fire({
-                title: titleText,
-                text: textBody,
-                icon: iconType,
-                confirmButtonColor: '#2D3748',
-                timer: textBody === '' ? 2500 : undefined
-            });
-            window.history.replaceState({}, document.title, window.location.pathname + "?page=categories");
-        }
+        });
     }
 </script>
+<!-- Capture redirect indicators and display beautiful confirmation modals -->
+<?php if (isset($_GET['success']) && $_GET['success'] == 1): ?>
+    <script>
+        Swal.fire({
+            title: 'Job Finished Successfully!',
+            text: 'Your entries have been accurately logged inside the database.',
+            icon: 'success',
+            timer: 2000,
+            showConfirmButton: false
+        }).then(() => {
+            // Clean URL query parameters so refreshing the browser doesn't prompt the alert again
+            window.history.replaceState({}, document.title, window.location.pathname + window.location.search.split('&success')[0]);
+        });
+    </script>
+<?php elseif (isset($_GET['error'])): ?>
+    <script>
+        Swal.fire({
+            title: 'Operation Failed!',
+            text: 'An error occurred while handling records.',
+            icon: 'error',
+            confirmButtonText: 'Understood'
+        });
+    </script>
+<?php endif; ?>

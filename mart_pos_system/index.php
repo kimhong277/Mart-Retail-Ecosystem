@@ -9,7 +9,7 @@ if (!isset($_SESSION['username'])) {
     header("Location: login.php");
     exit();
 }
-include("header.php");
+include("./includes/header.php");
 ?>
 
 <div class="d-flex min-vh-100 align-items-stretch">
@@ -18,7 +18,7 @@ include("header.php");
         <?php include("sidebar.php"); ?>
     </div>
 
-    <div class="flex-grow-1 bg-light content overflow-x-auto">
+    <div class="flex-grow-1 bg-light content d-flex flex-column min-w-0">
 
         <?php include("navbar.php"); ?>
 
@@ -62,5 +62,5 @@ include("header.php");
 </div>
 
 <?php
-include("footer.php");
+include("./includes/footer.php");
 ?>

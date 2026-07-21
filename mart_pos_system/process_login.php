@@ -1,6 +1,9 @@
 <?php
 // process_login.php
-require_once 'db.php';
+$host = 'localhost';
+$db_user = 'root';
+$db_pass = '';
+$conn = mysqli_connect($host, $db_user, $db_pass, 'mart_pos_system');
 session_start();
 
 // 🚀 MATCH 1: Catches name="normal_login" from your form button element

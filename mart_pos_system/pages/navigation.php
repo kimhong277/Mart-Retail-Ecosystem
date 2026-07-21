@@ -1,6 +1,7 @@
 <?php
+$conn = mysqli_connect('localhost', 'root', '', 'mart_pos_system');
 // pages/dashboard.php
-require_once 'db.php';
+
 
 // Simple queries to show counters on the grid if needed later
 $brand_res    = mysqli_query($conn, "SELECT * FROM brands");

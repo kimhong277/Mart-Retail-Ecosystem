@@ -1,153 +1,106 @@
 <?php
-// pages/bills.php
-require_once 'db.php';
+$conn = mysqli_connect('localhost', 'root', '', 'mart_pos_system');
+mysqli_set_charset($conn, "utf8mb4");
 
-// READ: Fetch all expense entries ordered by the most recent records first
-$expense_sql = "SELECT * FROM expenses ORDER BY id DESC";
-$expense_result = mysqli_query($conn, $expense_sql);
-
-// Calculate global aggregate totals for summary card visualization metrics
-$total_expense_sum = 0.00;
+// Fetch accounts payable tracking log entries
+$bills_query = mysqli_query($conn, "SELECT * FROM supplier_bills ORDER BY created_at DESC");
 ?>
 
-<div class="container-fluid px-4 pt-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-            <h2 class="h3 mb-0 text-gray-800 fw-bold">Bills & Expenses Log</h2>
-            <p class="text-muted small mb-0">Track recurring utilities, facility rents, and daily shop operational expenditures.</p>
-        </div>
-        <button type="button" class="btn btn-dark btn-sm fw-semibold px-4 py-2" data-bs-toggle="modal" data-bs-target="#addExpenseModal">
-            <i class="bi bi-receipt me-1"></i> Record New Expense
-        </button>
-    </div>
-
-    <div class="card shadow-sm border-0">
-        <div class="card-header py-3 border-0">
-            <h6 class="m-0 fw-bold text-dark">Business Cash Outflows Ledger</h6>
-        </div>
-        <div class="card-body p-0">
-            <div class="table-responsive">
-                <table class="table table-hover align-middle mb-0">
-                    <thead class="table-light text-muted small text-uppercase">
-                        <tr>
-                            <th class="ps-4" style="width: 10%;">ID</th>
-                            <th>Expense Reference Title</th>
-                            <th>Category Type</th>
-                            <th>Payment Channel</th>
-                            <th>Amount Paid</th>
-                            <th>Date & Time Logged</th>
-                        </tr>
-                    </thead>
-                    <tbody class="small">
-                        <?php if ($expense_result && mysqli_num_rows($expense_result) > 0): ?>
-                            <?php while ($row = mysqli_fetch_assoc($expense_result)): ?>
-                                <?php $total_expense_sum += floatval($row['amount']); ?>
-                                <tr>
-                                    <td class="ps-4 text-secondary">#<?= $row['id'] ?></td>
-                                    <td class="fw-bold text-dark"><?= htmlspecialchars($row['expense_title']) ?></td>
-                                    <td>
-                                        <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle px-3 py-1 rounded">
-                                            <?= htmlspecialchars($row['category']) ?>
-                                        </span>
-                                    </td>
-                                    <td class="text-secondary"><?= htmlspecialchars($row['payment_method']) ?></td>
-                                    <td class="fw-bold text-danger">-$<?= number_format($row['amount'], 2) ?></td>
-                                    <td class="text-muted"><?= $row['expense_date'] ?></td>
-                                </tr>
-                            <?php endwhile; ?>
-                        <?php else: ?>
-                            <tr>
-                                <td colspan="6" class="text-center text-muted py-5">
-                                    <i class="bi bi-file-earmark-spreadsheet display-4 d-block text-black-50 mb-2"></i>
-                                    No operational expense files or utility bills logged for this cycle period yet.
-                                </td>
-                            </tr>
-                        <?php endif; ?>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
+<div class="mb-4">
+    <h2 class="fw-bold text-dark mb-1">🧾 Accounts Payable / Supplier Bills</h2>
+    <p class="text-muted small">Monitor financial wholesale expense invoices due to distribution companies.</p>
 </div>
 
-<div class="modal fade" id="addExpenseModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content border-0 shadow-lg">
-            <div class="modal-header bg-dark text-white">
-                <h5 class="modal-title fw-bold">File Business Outflow Expense</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-            </div>
-            <form action="process_bill.php" method="POST">
-                <div class="modal-body p-4">
-
-                    <div class="mb-3">
-                        <label class="form-label small fw-bold text-secondary">Expense Description Title <span class="text-danger">*</span></label>
-                        <input type="text" name="expense_title" class="form-control" placeholder="e.g., Monthly Shop Electricity Bill" required>
-                    </div>
-
-                    <div class="mb-3">
-                        <label class="form-label small fw-bold text-secondary">Expense Category Group</label>
-                        <select name="expense_category" class="form-select" required>
-                            <option value="Utilities">Utilities (Electricity / Water)</option>
-                            <option value="Rent">Facility Office Rent</option>
-                            <option value="Internet / Telecom">Internet & WiFi Subscriptions</option>
-                            <option value="Salaries">Staff Salaries / Compensation</option>
-                            <option value="Marketing">Advertising & Promos</option>
-                            <option value="Others">Miscellaneous Expenditures</option>
-                        </select>
-                    </div>
-
-                    <div class="row g-3">
-                        <div class="col-6">
-                            <label class="form-label small fw-bold text-secondary">Amount Outflow ($) <span class="text-danger">*</span></label>
-                            <input type="number" name="amount" class="form-control" step="0.01" min="0.01" placeholder="0.00" required>
-                        </div>
-                        <div class="col-6">
-                            <label class="form-label small fw-bold text-secondary">Payment Method Channel</label>
-                            <select name="payment_method" class="form-select">
-                                <option value="Cash">Cash Drawer</option>
-                                <option value="ABA Bank QR">ABA Mobile QR Bank Out</option>
-                                <option value="Credit Line">Company Credit Card</option>
-                            </select>
-                        </div>
-                    </div>
-
-                </div>
-                <div class="modal-footer bg-light">
-                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" name="add_expense" class="btn btn-dark btn-sm px-4">Log Expense Outflow</button>
-                </div>
-            </form>
+<div class="card border-0 shadow-sm rounded-3">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light text-secondary fw-semibold">
+                    <tr>
+                        <th>Voucher ID</th>
+                        <th>Supplier/Distributor</th>
+                        <th>Amount Due</th>
+                        <th>Status</th>
+                        <th>Created Date</th>
+                        <th class="text-center">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php if (mysqli_num_rows($bills_query) > 0): ?>
+                        <?php while ($bill = mysqli_fetch_assoc($bills_query)): ?>
+                            <tr>
+                                <td><span class="fw-bold text-secondary font-monospace"><?php echo $bill['bill_no']; ?></span></td>
+                                <td class="fw-semibold text-dark"><?php echo htmlspecialchars($bill['supplier_name']); ?></td>
+                                <td class="fw-bold text-primary">$<?php echo number_format($bill['amount_due'], 2); ?></td>
+                                <td>
+                                    <span class="badge px-3 py-1.5 border rounded-pill <?php echo $bill['status'] === 'Paid' ? 'bg-success-subtle text-success' : 'bg-danger-subtle text-danger'; ?>">
+                                        <?php echo $bill['status']; ?>
+                                    </span>
+                                </td>
+                                <td class="text-muted small"><?php echo $bill['created_at']; ?></td>
+                                <td class="text-center">
+                                    <?php if ($bill['status'] === 'Unpaid'): ?>
+                                        <button class="btn btn-sm btn-success fw-bold px-3 shadow-sm" onclick="payBill(<?php echo $bill['id']; ?>)">
+                                            💵 Mark Paid
+                                        </button>
+                                    <?php else: ?>
+                                        <span class="text-muted small fw-semibold"><i class="bi bi-check-circle-fill text-success"></i> Settled</span>
+                                    <?php endif; ?>
+                                </td>
+                            </tr>
+                        <?php endwhile; ?>
+                    <?php else: ?>
+                        <tr>
+                            <td colspan="6" class="text-center py-5 text-muted">
+                                📋 No outstanding supplier purchase invoices generated on record.
+                            </td>
+                        </tr>
+                    <?php endif; ?>
+                </tbody>
+            </table>
         </div>
     </div>
 </div>
 
 <script>
-    const urlParams = new URLSearchParams(window.location.search);
-    const statusMsg = urlParams.get('status');
+    function payBill(billId) {
+        Swal.fire({
+            title: 'Confirm Payment Settlement?',
+            text: "Verify that this wholesale distributor balance invoice has been financially resolved.",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#198754',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: 'Yes, Mark Settled!'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                Swal.fire({
+                    title: 'Processing Transaction...',
+                    allowOutsideClick: false,
+                    didOpen: () => {
+                        Swal.showLoading();
+                    }
+                });
 
-    if (statusMsg) {
-        let titleText = '';
-        let iconType = 'success';
+                // Send standard POST package string parameters back into our inline utility file execution path
+                const formData = new FormData();
+                formData.append('bill_id', billId);
 
-        if (statusMsg === 'success') {
-            titleText = 'Operational Expense Recorded and Logged Safely!';
-        } else if (statusMsg === 'invalid_input') {
-            titleText = 'Invalid Voucher Entries or Amounts Detected!';
-            iconType = 'warning';
-        } else if (statusMsg === 'error') {
-            titleText = 'Data Pipeline Intercepted an Entry Error!';
-            iconType = 'error';
-        }
-
-        if (titleText !== '') {
-            Swal.fire({
-                title: titleText,
-                icon: iconType,
-                confirmButtonColor: '#2D3748',
-                timer: 2500
-            });
-            window.history.replaceState({}, document.title, window.location.pathname + "?page=bills");
-        }
+                fetch('/mart-retail-ecosystem/mart_pos_system/settle_bill.php', {
+                        method: 'POST',
+                        body: formData
+                    })
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.success) {
+                            Swal.fire('Invoice Cleared!', 'The bill status code metrics have been marked completely Paid.', 'success')
+                                .then(() => window.location.reload());
+                        } else {
+                            Swal.fire('Error', data.message, 'error');
+                        }
+                    })
+                    .catch(() => Swal.fire('Error', 'Communication glitch with accounting controller core.', 'error'));
+            }
+        });
     }
 </script>

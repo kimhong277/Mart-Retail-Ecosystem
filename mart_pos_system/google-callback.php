@@ -1,7 +1,11 @@
 <?php
 // google-callback.php
-require_once 'config.php';
-require_once 'db.php'; // Includes your active mysqli $conn pipeline
+require_once 'config.php'; // 🔐 RESTORED: Vital for initializing session handles dynamically
+$conn = mysqli_connect('localhost', 'root', '', 'mart_pos_system');
+if (!$conn) {
+    die("Database engine link down: " . mysqli_connect_error());
+}
+mysqli_set_charset($conn, "utf8mb4");
 
 if (!isset($_GET['code'])) {
     header("Location: login.php?status=auth_error");
@@ -57,7 +61,6 @@ $fullname  = mysqli_real_escape_string($conn, $user_profile['name']);
 $check_user = mysqli_query($conn, "SELECT * FROM users WHERE email = '$email' LIMIT 1");
 
 if (mysqli_num_rows($check_user) > 0) {
-    // User already exists in our local system database! Fetch and populate session data
     $user = mysqli_fetch_assoc($check_user);
 
     // Ensure their google_id field is updated if it was missing
@@ -65,8 +68,7 @@ if (mysqli_num_rows($check_user) > 0) {
         mysqli_query($conn, "UPDATE users SET google_id = '$google_id' WHERE id = " . $user['id']);
     }
 } else {
-    // 💡 HYBRID HANDLER: If they are a new operator registering via Google, create them instantly!
-    // We generate a clean username handle using the prefix of their email address string
+    // HYBRID HANDLER: Create them instantly if they are a new operator
     $username = mysqli_real_escape_string($conn, explode('@', $email)[0]);
 
     $insert_sql = "INSERT INTO users (username, fullname, email, google_id, role) 
@@ -89,6 +91,6 @@ $_SESSION['fullname']  = $user['fullname'];
 $_SESSION['email']     = $user['email'];
 $_SESSION['user_role'] = $user['role'];
 
-// 🚀 REDIRECT TO DASHBOARD TRIGGERING YOUR NEW SWEETALERT SUCCESS MODAL!
-header("Location: index.php?page=dashboard&msg=success");
+// 🚀 FIXED: Dynamic redirect routing parameter matches your SweetAlert engine listeners!
+header("Location: index.php?page=dashboard&status=sale_success");
 exit();

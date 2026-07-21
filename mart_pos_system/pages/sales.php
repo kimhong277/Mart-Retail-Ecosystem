@@ -1,248 +1,418 @@
 <?php
-// pages/sales.php
-require_once 'db.php';
+// mart_pos_system/pages/sales.php
+// Dynamically included into index.php
 
-// Fetch available products list using your exact schema 'image' property
-$products_list = mysqli_query($conn, "SELECT p.id, p.product_name, p.price, p.quantity, p.image,c.category_name FROM products p LEFT JOIN categories c ON p.category_id = c.id WHERE quantity > 0 ORDER BY product_name ASC");
+$host = 'localhost';
+$db_user = 'root';
+$db_pass = '';
+$conn_pos = mysqli_connect($host, $db_user, $db_pass, 'mart_pos_system');
+
+if (!$conn_pos) {
+    echo "<div class='alert alert-danger'>Database access failure: " . mysqli_connect_error() . "</div>";
+    return;
+}
+mysqli_set_charset($conn_pos, "utf8mb4");
+
+// Fetch active products to display in the grid
+$sql = "SELECT p.*, c.category_name , c.status
+        FROM products p 
+        LEFT JOIN categories c ON p.category_id = c.id 
+        WHERE p.quantity > 0
+        ORDER BY p.product_name ASC";
+$result = mysqli_query($conn_pos, $sql);
+
+// Save items into a JSON array so JavaScript can search them instantly without reload
+$products_array = [];
+while ($row = mysqli_fetch_assoc($result)) {
+    $products_array[] = $row;
+}
+
+// Fetch categories for pill buttons
+$categories_query = mysqli_query($conn_pos, "SELECT * FROM categories ORDER BY category_name ASC");
 ?>
 
-<div class="container-fluid px-4 pt-4">
-    <div class="mb-4">
-        <h2 class="h3 mb-0 text-gray-800 fw-bold">Point of Sale (POS) Terminal</h2>
-        <p class="text-muted small">Select active warehouse products to build real-time client sales checkout invoices.</p>
-    </div>
+<!-- Include SweetAlert2 for beautiful checkout confirmation popups -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
-    <form action="process_sale.php" method="POST" id="posForm">
-        <div class="row g-4">
-
-            <div class="col-12 col-lg-8">
-
-                <div class="card shadow-sm border-0 mb-4 bg-light">
-                    <div class="card-header bg-white border-0 py-3">
-                        <h5 class="fw-bold text-dark mb-0"><i class="bi bi-grid-3x3-gap-fill me-2"></i>Product Catalog</h5>
+<div class="row g-4">
+    <!-- LEFT SIDE: Product Search & Visual Selection Grid (60% width) -->
+    <div class="col-lg-7">
+        <div class="card border-0 shadow-sm rounded-3 h-100">
+            <div class="card-body p-4">
+                <div class="mb-3">
+                    <h4 class="fw-bold text-dark mb-3">🛒 Register Terminal</h4>
+                    <!-- Interactive Real-Time Search Bar -->
+                    <div class="input-group shadow-sm rounded mb-3">
+                        <span class="input-group-text bg-white border-end-0 text-muted">🔍</span>
+                        <input type="text" id="posSearch" class="form-control border-start-0 py-2.5"
+                            placeholder="Type item name or barcode string to filter catalog..." onkeyup="filterProducts()">
                     </div>
-                    <div class="card-body" style="max-height: 450px; overflow-y: auto;">
-                        <div class="row row-cols-2 row-cols-md-3 row-cols-xl-4 g-3">
-                            <?php while ($prod = mysqli_fetch_assoc($products_list)):
-                                // 1. Explicitly check if the database value is empty, null, or has placeholder strings
-                                if (empty($prod['image']) || $prod['image'] == 'default.png') {
 
-                                    // 1. Force the category name to lowercase so the API can read it cleanly
-                                    $lowercase_category = strtolower($prod['category_name']);
-
-                                    // 2. Clean up any accidental quotes safely
-                                    $clean_category = str_replace(["'", '"'], "", $lowercase_category);
-
-                                    // 3. Generate the absolute placeholder URL string
-                                    $img_src = "https://loremflickr.com/320/240/" . urlencode($clean_category) . "?lock=" . $prod['id'];;
-                                } else {
-                                    // Load the custom file path from your local folder
-                                    $img_src = "uploads/" . $prod['image'];
-                                }
-                            ?>
-                                <div class="col">
-                                    <div class="card h-100 border-0 shadow-sm product-item-card"
-                                        onclick="addCardToCart(<?= $prod['id'] ?>, '<?= addslashes($prod['product_name']) ?>', <?= $prod['price'] ?>, <?= $prod['quantity'] ?>)"
-                                        style="cursor: pointer; transition: transform 0.2s;">
-
-                                        <div class="p-2 text-center bg-white rounded-top" style="height: 120px;">
-                                            <img src="<?= $img_src; ?>" class="img-fluid h-100" style="object-fit: contain;" alt="Product">
-
-                                        </div>
-
-                                        <div class="card-body p-2 d-flex flex-column justify-content-between">
-                                            <div class="mb-2">
-                                                <p class="small fw-bold mb-1 text-dark text-truncate"><?= htmlspecialchars($prod['product_name']) ?></p>
-                                                <div class="d-flex justify-content-between align-items-center">
-                                                    <span class="text-success small fw-bold">$<?= number_format($prod['price'], 2) ?></span>
-                                                    <span class="badge bg-secondary" style="font-size: 0.7rem;"><?= $prod['quantity'] ?> In Stock</span>
-                                                </div>
-                                            </div>
-
-                                            <div class="btn btn-dark btn-sm w-100 py-1 fw-semibold text-center mt-2 add-cart-btn-indicator" style="font-size: 0.8rem;">
-                                                <i class="bi bi-cart-plus-fill me-1"></i> Add To Cart
-                                            </div>
-                                        </div>
-
-                                    </div>
-                                </div>
-                            <?php endwhile; ?>
-                        </div>
+                    <!-- 🏷️ CATEGORY PILL TABS -->
+                    <div class="d-flex gap-2 overflow-x-auto pb-2 border-bottom text-nowrap" id="categoryPillContainer">
+                        <button class="btn btn-sm btn-primary rounded-pill px-3 fw-bold category-pill active" data-cat="all">
+                            All Items
+                        </button>
+                        <?php while ($cat = mysqli_fetch_assoc($categories_query)) {
+                            if ($cat['status'] === '1') { ?>
+                                <button class="btn btn-sm btn-outline-secondary rounded-pill px-3 fw-medium category-pill" data-cat="<?= $cat['id'] ?>">
+                                    <?= htmlspecialchars($cat['category_name']) ?>
+                                </button>
+                        <?php }
+                        } ?>
                     </div>
                 </div>
 
-                <div class="card shadow-sm border-0 p-4">
-                    <h5 class="fw-bold text-dark mb-3"><i class="bi bi-cart-check-fill me-2"></i>Current Basket</h5>
-                    <div class="table-responsive">
-                        <table class="table table-hover align-middle" id="cartTable">
-                            <thead class="table-light text-muted small text-uppercase">
+                <!-- Scrollable Catalog Items Display Grid (Lag-Free Lazy Infinite Scroll) -->
+                <div class="row row-cols-1 row-cols-md-3 g-3 overflow-y-auto" style="max-height: 520px;" id="productsGrid">
+                    <!-- Cards are dynamically rendered by JS -->
+                </div>
+
+                <!-- Grid Counter Footer -->
+                <div class="pt-2 mt-2 border-top text-muted small d-flex justify-content-between align-items-center">
+                    <span id="posGridSummary">Showing 0 items</span>
+                    <span class="badge bg-light text-secondary border font-monospace">Auto-Scroll Active</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- RIGHT SIDE: Active Cart & Invoice Subtotal Panel (40% width) -->
+    <div class="col-lg-5">
+        <div class="card border-0 shadow-sm rounded-3 h-100">
+            <div class="card-body p-4 d-flex flex-column justify-content-between">
+                <div>
+                    <h4 class="fw-bold text-dark mb-4 d-flex justify-content-between align-items-center">
+                        <span>📝 Current Bill</span>
+                        <button class="btn btn-sm btn-outline-danger border-0 fw-bold" onclick="clearCart()">Clear All</button>
+                    </h4>
+
+                    <!-- Dynamic Checkout Receipt List Table -->
+                    <div class="table-responsive overflow-y-auto mb-4" style="max-height: 400px;">
+                        <table class="table align-middle mb-0">
+                            <thead class="table-light">
                                 <tr>
-                                    <th>Item Designation</th>
-                                    <th style="width: 20%;">Qty</th>
-                                    <th>Unit Price</th>
-                                    <th>Subtotal</th>
-                                    <th class="text-center" style="width: 10%;">Remove</th>
+                                    <th>Product</th>
+                                    <th style="width: 100px;">Qty</th>
+                                    <th class="text-end">Total</th>
+                                    <th style="width: 40px;"></th>
                                 </tr>
                             </thead>
-                            <tbody class="small" id="cartBody">
-                                <tr id="emptyCartPlaceholder">
-                                    <td colspan="5" class="text-center text-muted py-5">
-                                        <i class="bi bi-basket2 display-4 d-block text-black-50 mb-2"></i>
-                                        Basket empty. Select items from the catalog above.
+                            <tbody id="cartTableBody">
+                                <tr>
+                                    <td colspan="4" class="text-center py-5 text-muted" id="emptyCartRow">
+                                        Cart is empty. Click items on the left to add them to the ticket!
                                     </td>
                                 </tr>
                             </tbody>
                         </table>
                     </div>
                 </div>
-            </div>
 
-            <div class="col-12 col-lg-4">
-                <div class="card shadow-sm border-0 p-4 bg-white position-sticky" style="top: 20px;">
-                    <h5 class="fw-bold text-dark mb-3"><i class="bi bi-receipt-cutoff me-2"></i>Payment Summary</h5>
-                    <div class="d-flex justify-content-between align-items-center mb-2 border-bottom pb-2">
-                        <span class="text-muted small fw-medium">Order Subtotal:</span>
-                        <span class="fw-bold text-dark" id="displaySubtotal">$0.00</span>
+                <!-- Subtotals and Action Checkout Button Placement -->
+                <div class="border-top pt-3">
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted fw-semibold">Subtotal</span>
+                        <span class="fw-bold text-dark fs-5" id="billSubtotal">$0.00</span>
                     </div>
-                    <div class="d-flex justify-content-between align-items-center mb-4">
-                        <span class="h6 fw-bold mb-0 text-dark">Grand Payable Total:</span>
-                        <span class="h4 fw-bold mb-0 text-dark" id="displayGrandTotal">$0.00</span>
+                    <div class="d-flex justify-content-between mb-4">
+                        <span class="text-muted fw-semibold">Grand Total</span>
+                        <span class="fw-bold text-primary fs-3" id="billTotal">$0.00</span>
                     </div>
 
-                    <input type="hidden" name="total_amount" id="formTotalAmount" value="0.00">
-
-                    <div class="mb-4">
-                        <label class="form-label small fw-bold text-secondary">Settlement Method</label>
-                        <select name="payment_method" class="form-select fw-semibold" required>
-                            <option value="Cash">Cash Drawer</option>
-                            <option value="ABA Pay / QR">ABA Pay Mobile QR Code</option>
-                            <option value="Bank Wire">Bank Wire Transfer</option>
-                        </select>
-                    </div>
-
-                    <button type="submit" name="checkout" class="btn btn-dark w-100 fw-bold py-3 shadow-sm text-uppercase">
-                        <i class="bi bi-wallet2 me-2"></i> Process POS Checkout
+                    <button class="btn btn-primary btn-lg w-100 fw-bold shadow-sm py-3" id="checkoutBtn" disabled onclick="processPOSCheckout()">
+                        💳 Complete In-Store Sale
                     </button>
                 </div>
             </div>
-
         </div>
-    </form>
+    </div>
 </div>
 
 <style>
-    .product-item-card:hover {
-        transform: translateY(-5px);
+    .card-hover:hover {
+        transform: translateY(-4px);
         box-shadow: 0 .5rem 1rem rgba(0, 0, 0, .15) !important;
+        border-color: #0d6efd !important;
     }
 
-    .product-item-card:hover .add-cart-btn-indicator {
-        background-color: #198754 !important;
-        border-color: #198754 !important;
-    }
-
-    .card-body::-webkit-scrollbar {
-        width: 6px;
-    }
-
-    .card-body::-webkit-scrollbar-track {
-        background: #f1f1f1;
-    }
-
-    .card-body::-webkit-scrollbar-thumb {
-        background: #888;
-        border-radius: 10px;
+    .fs-8 {
+        font-size: 0.75rem;
     }
 </style>
 
+<!-- DYNAMIC CORE CART CONTROLLER SCRIPT -->
 <script>
-    function addCardToCart(id, name, price, maxStock) {
-        if (document.getElementById('row_item_' + id)) {
-            Swal.fire({
-                icon: 'warning',
-                title: 'Item Already Added',
-                text: 'Increase the quantity in your cart!',
-                confirmButtonColor: '#2D3748'
+    const allProducts = <?= json_encode($products_array); ?>;
+    let activeCategory = 'all';
+    let filteredProducts = [...allProducts];
+    let cart = [];
+
+    // ⚡ PERFORMANCE CONFIGURATION (Prevents DOM Lag)
+    const BATCH_SIZE = 12;
+    let currentRenderIndex = 0;
+
+    document.addEventListener("DOMContentLoaded", function() {
+        // Initial catalog filter & render
+        filterProducts();
+
+        // Category Pill Filter Click Handlers
+        document.querySelectorAll('.category-pill').forEach(pill => {
+            pill.addEventListener('click', function() {
+                document.querySelectorAll('.category-pill').forEach(p => {
+                    p.classList.remove('btn-primary', 'fw-bold', 'active');
+                    p.classList.add('btn-outline-secondary', 'fw-medium');
+                });
+
+                this.classList.remove('btn-outline-secondary', 'fw-medium');
+                this.classList.add('btn-primary', 'fw-bold', 'active');
+
+                activeCategory = this.dataset.cat;
+                filterProducts();
             });
+        });
+
+        // ⚡ INFINITE SCROLL EVENT LISTENER
+        const gridContainer = document.getElementById('productsGrid');
+        gridContainer.addEventListener('scroll', function() {
+            // Check if user scrolled near the bottom (within 60px)
+            if (gridContainer.scrollTop + gridContainer.clientHeight >= gridContainer.scrollHeight - 60) {
+                renderNextBatch();
+            }
+        });
+    });
+
+    // 1. Live Search & Category Filter Engine
+    function filterProducts() {
+        const query = document.getElementById('posSearch').value.toLowerCase().trim();
+
+        // Filter dataset in-memory
+        filteredProducts = allProducts.filter(prod => {
+            const prodName = (prod.product_name || '').toLowerCase();
+            const prodBarcode = (prod.barcode || '').toLowerCase();
+            const matchesQuery = prodName.includes(query) || prodBarcode.includes(query);
+            const matchesCat = (activeCategory === 'all') || (parseInt(prod.category_id) === parseInt(activeCategory));
+
+            return matchesQuery && matchesCat;
+        });
+
+        // Reset scroll position & render index
+        const container = document.getElementById('productsGrid');
+        container.innerHTML = '';
+        container.scrollTop = 0;
+        currentRenderIndex = 0;
+
+        if (filteredProducts.length === 0) {
+            container.innerHTML = `<div class="col-12 w-100 text-center py-5 text-muted">No items match your filter selection.</div>`;
+            document.getElementById('posGridSummary').textContent = 'Showing 0 items';
             return;
         }
 
-        const placeholder = document.getElementById('emptyCartPlaceholder');
-        if (placeholder) placeholder.style.display = 'none';
-
-        const tr = document.createElement('tr');
-        tr.id = 'row_item_' + id;
-        tr.innerHTML = `
-            <td class="fw-bold text-dark">
-                <input type="hidden" name="product_ids[]" value="${id}">
-                ${name}
-            </td>
-            <td>
-                <input type="number" name="quantities[]" class="form-control form-control-sm qty-input" value="1" min="1" max="${maxStock}" onchange="recalculateTotals(this, ${price}, ${maxStock})">
-            </td>
-            <td class="text-secondary fw-semibold">
-                <input type="hidden" name="prices[]" value="${price}">
-                $${price.toFixed(2)}
-            </td>
-            <td class="fw-bold text-dark item-subtotal">$${price.toFixed(2)}</td>
-            <td class="text-center">
-                <button type="button" class="btn btn-sm btn-outline-danger border-0 p-1" onclick="removeCartItemRow(${id})">
-                    <i class="bi bi-trash3-fill"></i>
-                </button>
-            </td>
-        `;
-
-        document.getElementById('cartBody').appendChild(tr);
-        updateGlobalBillSummary();
+        // Render first batch of 12 items
+        renderNextBatch();
     }
 
-    function removeCartItemRow(id) {
-        const row = document.getElementById('row_item_' + id);
-        if (row) row.remove();
+    // 2. Render Next Batch into Grid (Lag-Free)
+    function renderNextBatch() {
+        if (currentRenderIndex >= filteredProducts.length) return;
 
-        const body = document.getElementById('cartBody');
-        if (body.children.length === 1 && body.firstElementChild.id === 'emptyCartPlaceholder') {
-            document.getElementById('emptyCartPlaceholder').style.display = 'table-row';
-        } else if (body.children.length === 0) {
-            body.innerHTML = `<tr id="emptyCartPlaceholder"><td colspan="5" class="text-center text-muted py-5"><i class="bi bi-basket2 display-4 d-block text-black-50 mb-2"></i>Basket empty. Select items from the catalog above.</td></tr>`;
-        }
-        updateGlobalBillSummary();
-    }
+        const container = document.getElementById('productsGrid');
+        const batch = filteredProducts.slice(currentRenderIndex, currentRenderIndex + BATCH_SIZE);
 
-    function recalculateTotals(input, price, maxStock) {
-        let qty = parseInt(input.value);
-        if (qty > maxStock) {
-            Swal.fire({
-                icon: 'error',
-                title: 'Insufficient Stock Levels',
-                text: 'Max available inventory left inside storage layers for this item is: ' + maxStock + ' pcs!',
-                confirmButtonColor: '#2D3748'
-            });
-            input.value = maxStock;
-            qty = maxStock;
-        }
-        if (qty < 1 || isNaN(qty)) {
-            input.value = 1;
-            qty = 1;
-        }
+        batch.forEach(prod => {
+            const imageFile = prod.image ? prod.image : 'default.png';
 
-        const row = input.closest('tr');
-        const subtotalCell = row.querySelector('.item-subtotal');
-        subtotalCell.innerText = '$' + (qty * price).toFixed(2);
-        updateGlobalBillSummary();
-    }
+            // Image Resolver: supports both web URLs and local paths
+            let imagePath = '';
+            if (imageFile.startsWith('http://') || imageFile.startsWith('https://')) {
+                imagePath = imageFile;
+            } else {
+                imagePath = "/mart-retail-ecosystem/mart_pos_system/assets/images/" + imageFile;
+            }
 
-    function updateGlobalBillSummary() {
-        let grandTotal = 0;
-        const subtotals = document.querySelectorAll('.item-subtotal');
+            const categoryLabel = prod.category_name ? prod.category_name : 'General';
+            const barcodeLabel = prod.barcode ? prod.barcode : 'N/A';
+            const price = parseFloat(prod.sale_price).toFixed(2);
+            const nameEscaped = prod.product_name.replace(/'/g, "\\'");
 
-        subtotals.forEach(cell => {
-            const val = parseFloat(cell.innerText.replace('$', ''));
-            if (!isNaN(val)) grandTotal += val;
+            const cardHTML = `
+                <div class="col product-item-card">
+                    <div class="card h-100 shadow text-center card-hover" style="cursor: pointer; transition: transform 0.2s;">
+                        <div class="position-relative bg-white rounded-top overflow-hidden d-flex align-items-center justify-content-center" style="height: 140px; width: 100%;">
+                            <img src="${imagePath}"
+                                class="img-fluid p-2"
+                                alt=""
+                                style="max-height: 100%; max-width: 100%; object-fit: contain;"
+                                onerror="this.onerror=null; this.src='/mart-retail-ecosystem/mart_pos_system/assets/images/default.png';">
+                        </div>
+
+                        <div class="card-body d-flex flex-column justify-content-between p-3">
+                            <div>
+                                ` +
+                // <-- <span class="badge bg-light text-dark mb-2 fs-8">${categoryLabel}</span> !-->
+
+                ` <h6 class="fw-bold text-secondary mb-1 text-truncate" title="${prod.product_name}">${prod.product_name}</h6>
+                                <small class="text-muted font-monospace d-block mb-2">#${barcodeLabel}</small>
+                            </div>
+                            <div>
+                                <h5 class="fw-bold text-primary mb-1">$${price}</h5>
+                                <small class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1 fs-8">
+                                    Stock: ${prod.quantity}
+                                </small>
+                            </div>
+                        </div>
+                        <button class="btn btn-primary mx-2 mb-2" onclick="addToCart(${prod.id}, '${nameEscaped}', ${prod.sale_price}, ${prod.quantity})">Add to Cart</button>
+                    </div>
+                </div>
+            `;
+            container.insertAdjacentHTML('beforeend', cardHTML);
         });
 
-        document.getElementById('displaySubtotal').innerText = '$' + grandTotal.toFixed(2);
-        document.getElementById('displayGrandTotal').innerText = '$' + grandTotal.toFixed(2);
-        document.getElementById('formTotalAmount').value = grandTotal.toFixed(2);
+        currentRenderIndex += batch.length;
+        document.getElementById('posGridSummary').textContent = `Loaded ${currentRenderIndex} of ${filteredProducts.length} items`;
+    }
+
+    // 3. Add Item to Cart Array
+    function addToCart(id, name, price, maxStock) {
+        const existingIndex = cart.findIndex(item => item.id === id);
+
+        if (existingIndex > -1) {
+            if (cart[existingIndex].qty >= maxStock) {
+                Swal.fire('Stock Limit!', `Only ${maxStock} units are available in inventory.`, 'warning');
+                return;
+            }
+            cart[existingIndex].qty += 1;
+        } else {
+            cart.push({
+                id,
+                name,
+                price,
+                qty: 1,
+                maxStock
+            });
+        }
+        renderCart();
+    }
+
+    // 4. Update Individual Quantity Inside Input Row
+    function updateQty(id, newQty) {
+        const index = cart.findIndex(item => item.id === id);
+        if (index === -1) return;
+
+        newQty = parseInt(newQty);
+        if (isNaN(newQty) || newQty <= 0) {
+            removeFromCart(id);
+            return;
+        }
+
+        if (newQty > cart[index].maxStock) {
+            Swal.fire('Stock Limit!', `Only ${cart[index].maxStock} units available.`, 'warning');
+            cart[index].qty = cart[index].maxStock;
+        } else {
+            cart[index].qty = newQty;
+        }
+        renderCart();
+    }
+
+    // 5. Remove Item Row from Basket Array
+    function removeFromCart(id) {
+        cart = cart.filter(item => item.id !== id);
+        renderCart();
+    }
+
+    // 6. Reset Cart Core Array entirely
+    function clearCart() {
+        cart = [];
+        renderCart();
+    }
+
+    // 7. Redraw receipt layout blocks matching memory metrics
+    function renderCart() {
+        const tbody = document.getElementById('cartTableBody');
+        const emptyRow = document.getElementById('emptyCartRow');
+        const checkoutBtn = document.getElementById('checkoutBtn');
+
+        // Clear dynamic rows
+        const manualRows = tbody.querySelectorAll('.cart-item-row');
+        manualRows.forEach(row => row.remove());
+
+        if (cart.length === 0) {
+            emptyRow.style.display = "";
+            document.getElementById('billSubtotal').innerText = "$0.00";
+            document.getElementById('billTotal').innerText = "$0.00";
+            checkoutBtn.disabled = true;
+            return;
+        }
+
+        emptyRow.style.display = "none";
+        checkoutBtn.disabled = false;
+        let total = 0;
+
+        cart.forEach(item => {
+            const rowTotal = item.price * item.qty;
+            total += rowTotal;
+
+            const tr = document.createElement('tr');
+            tr.className = 'cart-item-row';
+            tr.innerHTML = `
+            <td>
+                <span class="fw-semibold text-secondary d-block text-truncate" style="max-width: 150px;">${item.name}</span>
+                <small class="text-muted">$${item.price.toFixed(2)} each</small>
+            </td>
+            <td>
+                <input type="number" class="form-control form-control-sm text-center fw-bold" 
+                       value="${item.qty}" min="1" max="${item.maxStock}" 
+                       onchange="updateQty(${item.id}, this.value)">
+            </td>
+            <td class="text-end fw-bold text-dark">$${rowTotal.toFixed(2)}</td>
+            <td class="text-end">
+                <button class="btn btn-sm btn-link text-danger p-0" onclick="removeFromCart(${item.id})">❌</button>
+            </td>
+        `;
+            tbody.appendChild(tr);
+        });
+
+        document.getElementById('billSubtotal').innerText = `$${total.toFixed(2)}`;
+        document.getElementById('billTotal').innerText = `$${total.toFixed(2)}`;
+    }
+
+    // 8. Dispatch JSON Array payloads asynchronously to root operations
+    function processPOSCheckout() {
+        Swal.fire({
+            title: 'Complete Checkout?',
+            text: `Collect cash payment totaling ${document.getElementById('billTotal').innerText}. Confirm order completion?`,
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#0d6efd',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: 'Yes, Complete Order!'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                const formData = new FormData();
+                formData.append('cart_data', JSON.stringify(cart));
+
+                fetch('/mart-retail-ecosystem/mart_pos_system/place_pos_order.php', {
+                        method: 'POST',
+                        body: formData
+                    })
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.success) {
+                            Swal.fire({
+                                title: 'Success!',
+                                text: 'Receipt printed and inventory decremented cleanly.',
+                                icon: 'success',
+                                timer: 2000,
+                                showConfirmButton: false
+                            }).then(() => {
+                                window.location.reload();
+                            });
+                        } else {
+                            Swal.fire('Checkout Refused', data.message || 'Error processing sales line items.', 'error');
+                        }
+                    })
+                    .catch(() => Swal.fire('Error!', 'System communication loss processing sale.', 'error'));
+            }
+        });
     }
 </script>

@@ -1,6 +1,9 @@
 <?php
 // pages/transactions.php
-require_once 'db.php';
+$host = 'localhost';
+$db_user = 'root';
+$db_pass = '';
+$conn = mysqli_connect($host, $db_user, $db_pass, 'mart_pos_system');
 
 $cash_in  = 0.00;
 $cash_out = 0.00;

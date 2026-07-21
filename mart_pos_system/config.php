@@ -7,7 +7,8 @@ if (session_status() === PHP_SESSION_NONE) {
 // 🔐 GOOGLE OAUTH SECURITY PROFILE DEFINITION KEYS
 define('GOOGLE_CLIENT_ID', '656815209579-nh2ceebs4hv5smcmc83f2nf9hvn7lmpl.apps.googleusercontent.com');
 define('GOOGLE_CLIENT_SECRET', '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');
-define('GOOGLE_REDIRECT_URI', 'http://localhost/mart_pos_system/google-callback.php');
+// define('GOOGLE_REDIRECT_URI', 'http://localhost/mart_pos_system/google-callback.php');
+define('GOOGLE_REDIRECT_URI', 'http://localhost/mart-retail-ecosystem/mart_pos_system/google-callback.php');
 
 // Simple helper function to generate the authentication click route URL string
 function getGoogleLoginUrl()
